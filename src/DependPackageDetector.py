@@ -1,5 +1,7 @@
 import sys;
 from os import listdir;
+from os.path import exists;
+from os.path import dirname;
 from os.path import isfile;
 from os.path import isdir;
 from os.path import islink;
@@ -8,7 +10,10 @@ USEAGE = """USEAGE : command PASE_PATH
 """
 
 class DependPackageDetector:
-	startPath = "";
+	startPath = ""
+	outputPath = ""
+	outputData = []
+	# dict( key : set( depend package name ) )
 	dependInfo = dict();
 
 	def getDependPackages(self, file):
@@ -40,7 +45,7 @@ class DependPackageDetector:
 		return package;
 
 	def analyzeFile(self, filePath):
-		print filePath
+		#print filePath
 		if filePath.endswith(".java"):
 			# open file
 			file = open(filePath, "r", -1)
@@ -68,11 +73,12 @@ class DependPackageDetector:
 			self.startPath = dir
 			return True
 		else:
+			self.startPath = ""
 			return False
 
 	def startSearch(self):
 		self.search(self.startPath)
-		print self.dependInfo
+		#print self.dependInfo
 
 	def search(self, dir):
 		for file in listdir(dir):
@@ -83,7 +89,38 @@ class DependPackageDetector:
 			elif isdir(filePath) and not islink(filePath):
 				#print "%s is dir, search in this directory." % filePath
 				self.search(filePath)
-
+	
+	def createOutputData(self):
+		allPackage = set()
+		for package in self.dependInfo.keys():
+			allPackage.add(package)
+			for pkg in self.dependInfo[package]:
+				allPackage.add(pkg)
+		allPackage = list(allPackage)
+		allPackage.sort()
+		
+		self.outputData.append(", ")
+		for package in allPackage:
+			self.outputData.append(package)
+			self.outputData.append(", ")
+		self.outputData.append("\n")
+		
+		dependInfoKeys = list(self.dependInfo.keys())
+		dependInfoKeys.sort()
+		for key in dependInfoKeys:
+			self.outputData.append(key)
+			self.outputData.append(", ")
+			for pkg in allPackage:
+				if pkg in self.dependInfo[key]:
+					self.outputData.append("x, ")
+				else:
+					self.outputData.append(", ")
+			self.outputData.append("\n")
+		self.outputData.append("x : left package depend to top package.");
+		self.outputData = ''.join(self.outputData);
+		
+		
+		
 def main():
 	args = sys.argv
 	if len(args) != 2:
@@ -93,6 +130,8 @@ def main():
 		detector = DependPackageDetector()
 		if detector.setStartPath(args[1]):
 			detector.startSearch()
+			detector.createOutputData()
+			print detector.outputData
 		else:
 			print USEAGE
 			quit()
