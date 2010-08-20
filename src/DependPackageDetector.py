@@ -1,7 +1,5 @@
 import sys;
 from os import listdir;
-from os.path import exists;
-from os.path import dirname;
 from os.path import isfile;
 from os.path import isdir;
 from os.path import islink;
@@ -24,12 +22,10 @@ class DependPackageDetector:
 			line = file.readline()
 
 		packages = set();
-		while line.startswith("import") and not line == "":
-			if line == "\n":
-				line = file.readline()
-				continue;
-			#print line;
-			packages.add(line.split()[-1].rpartition(".")[0]);
+		while not line == "":
+			if line.startswith("import"):
+				#print line;
+				packages.add(line.split()[-1].rpartition(".")[0]);
 			line = file.readline()
 
 		#print "packages : %s" % packages
@@ -40,6 +36,8 @@ class DependPackageDetector:
 		line = file.readline()
 		while not line.startswith("package") and not line == "":
 			line = file.readline()
+		if line == "":
+			return False
 		package = line.split()[-1][:-1]
 		#print "package : %s" % package
 		return package;
@@ -52,6 +50,8 @@ class DependPackageDetector:
 			if file:
 				# get this file package
 				package = self.getFilePackage(file)
+				if package is False:
+					return False
 
 				# get depend package
 				dependPackages = self.getDependPackages(file)
